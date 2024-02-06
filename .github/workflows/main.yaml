@@ -1,0 +1,33 @@
+name: "CICD"
+
+on: push
+
+jobs:
+  Run-DAI-Test-Configuration:
+    strategy: # Optional configuration by using matrix strategy
+      max-parallel: 1 # To set the maximum number of jobs that can run simultaneously 
+    runs-on: ubuntu-latest
+    name: Run Test Configuration
+    steps:
+      - run: echo "Trigger event.. ${{ github.event_name }}. Runner OS.. ${{ runner.os }}."
+      - name: Eggplant Runner
+        uses: keysight-eggplant/eggplant-github-action@v1.0.9
+        continue-on-error: true
+        with:
+          serverURL: "https://trial.dai.eggplant.cloud"
+          testConfigID: "5f6f215d-40a7-41f0-9b25-41368cf1cc39"
+          clientID: "client:dai:api:integration:980fd2a5-db12-4b77-96ec-bdbaf3535013"
+          clientSecret: "YZAMatJoVmZMjTcmehkMeNIpCABzXsHR"
+          testResultPath: "result.xml"
+          
+      - name: "Import results to Xray"
+        continue-on-error: true
+        run: | 
+          token=$(curl -s -H "Content-Type: application/json" -X POST --data '{"client_id": "7FB79B075CDC48F5A119B04F368DEB07", "client_secret": "5bfea753af20cd50fdd31a0ea0836bfdab5b51427bed5d6617ee394c228a10cc" }' https://xray.cloud.getxray.app/api/v2/authenticate);
+          echo "Authentication token=$token"; 
+          response=$(curl -s -H "Content-Type: text/xml" -X POST -H "Authorization: Bearer ${token:1: -1}" --data @"result.xml" https://xray.cloud.getxray.app/api/v2/import/execution/junit?projectKey=EY&testExecKey=EY-6);
+          echo "Xray issue=$response"
+
+
+ 
+
